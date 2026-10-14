@@ -1,137 +1,122 @@
+
 const db = require("../db");
 
-const getStudents = (req, res) => {
-    const { search } = req.query;
+const getStudents = async (req, res) => {
+    try {
+        const { search } = req.query;
+        let sql = "SELECT * FROM students";
+        let values = [];
 
-    let sql = "SELECT * FROM students";
-    let values = [];
-
-    if (search) {
-        sql = `
-            SELECT * FROM students
-            WHERE name LIKE ?
-            OR email LIKE ?
-            OR course LIKE ?
-        `;
-
-        const searchValue = `%${search}%`;
-        values = [searchValue, searchValue, searchValue];
-    }
-
-    db.query(sql, values, (err, results) => {
-        if (err) {
-            return res.status(500).json({
-                error: err.message
-            });
+        if (search) {
+            sql = `
+                SELECT * FROM students
+                WHERE name ILIKE $1
+                OR email ILIKE $1
+                OR course ILIKE $1
+                ORDER BY id
+            `;
+            values = [`%${search}%`];
         }
 
-        res.json(results);
-    });
+        const result = await db.query(sql, values);
+        res.json(result.rows);
+    } catch (err) {
+        console.error("Get students error:", err.message);
+        res.status(500).json({ error: "Failed to fetch students" });
+    }
 };
 
-const addStudent = (req, res) => {
+const addStudent = async (req, res) => {
     const { name, age, email, course } = req.body;
 
-    if (!name || !age || !email || !course) {
+    if (!name || age === undefined || age === null || !email || !course) {
         return res.status(400).json({
             error: "All fields are required"
         });
     }
 
-    if (age < 1 || age > 100) {
+    if (!Number.isInteger(Number(age)) || Number(age) < 1 || Number(age) > 100) {
         return res.status(400).json({
-            error: "Age must be between 1 and 100"
+            error: "Age must be an integer between 1 and 100"
         });
     }
 
-    const sql = `
-        INSERT INTO students (name, age, email, course)
-        VALUES (?, ?, ?, ?)
-    `;
-
-    db.query(sql, [name, age, email, course], (err, result) => {
-        if (err) {
-            return res.status(500).json({
-                error: err.message
-            });
-        }
+    try {
+        const result = await db.query(
+            `INSERT INTO students (name, age, email, course)
+             VALUES ($1, $2, $3, $4)
+             RETURNING id`,
+            [name, Number(age), email, course]
+        );
 
         res.status(201).json({
             message: "Student added successfully",
-            id: result.insertId
+            id: result.rows[0].id
         });
-    });
+    } catch (err) {
+        console.error("Add student error:", err.message);
+        res.status(500).json({ error: "Failed to add student" });
+    }
 };
 
-const deleteStudent = (req, res) => {
+const deleteStudent = async (req, res) => {
     const { id } = req.params;
 
-    db.query(
-        "DELETE FROM students WHERE id = ?",
-        [id],
-        (err, result) => {
-            if (err) {
-                return res.status(500).json({
-                    error: err.message
-                });
-            }
+    try {
+        const result = await db.query(
+            "DELETE FROM students WHERE id = $1 RETURNING id",
+            [id]
+        );
 
-            if (result.affectedRows === 0) {
-                return res.status(404).json({
-                    error: "Student not found"
-                });
-            }
-
-            res.json({
-                message: "Student deleted successfully"
+        if (result.rowCount === 0) {
+            return res.status(404).json({
+                error: "Student not found"
             });
         }
-    );
+
+        res.json({ message: "Student deleted successfully" });
+    } catch (err) {
+        console.error("Delete student error:", err.message);
+        res.status(500).json({ error: "Failed to delete student" });
+    }
 };
 
-const updateStudent = (req, res) => {
+const updateStudent = async (req, res) => {
     const { id } = req.params;
     const { name, age, email, course } = req.body;
 
-    if (!name || !age || !email || !course) {
+    if (!name || age === undefined || age === null || !email || !course) {
         return res.status(400).json({
             error: "All fields are required"
         });
     }
 
-    if (age < 1 || age > 100) {
+    if (!Number.isInteger(Number(age)) || Number(age) < 1 || Number(age) > 100) {
         return res.status(400).json({
-            error: "Age must be between 1 and 100"
+            error: "Age must be an integer between 1 and 100"
         });
     }
 
-    const sql = `
-        UPDATE students
-        SET name = ?, age = ?, email = ?, course = ?
-        WHERE id = ?
-    `;
+    try {
+        const result = await db.query(
+            `UPDATE students
+             SET name = $1, age = $2, email = $3, course = $4
+             WHERE id = $5
+             RETURNING id`,
+            [name, Number(age), email, course, id]
+        );
 
-    db.query(
-        sql,
-        [name, age, email, course, id],
-        (err, result) => {
-            if (err) {
-                return res.status(500).json({
-                    error: err.message
-                });
-            }
-
-            if (result.affectedRows === 0) {
-                return res.status(404).json({
-                    error: "Student not found"
-                });
-            }
-
-            res.json({
-                message: "Student updated successfully"
+        if (result.rowCount === 0) {
+            return res.status(404).json({
+                error: "Student not found"
             });
         }
-    );
+
+        res.json({ message: "Student updated successfully" });
+    } catch (err) {
+        console.error("Update student error:", err.message);
+        res.status(500).json({ error: "Failed to update student" });
+    }
 };
 
 module.exports = {

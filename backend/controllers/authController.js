@@ -1,3 +1,4 @@
+
 const bcrypt = require("bcrypt");
 const db = require("../db");
 const jwt = require("jsonwebtoken");
@@ -14,42 +15,33 @@ const register = async (req, res) => {
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        const sql = `
-            INSERT INTO users (username, password)
-            VALUES (?, ?)
-        `;
-
-        db.query(
-            sql,
-            [username, hashedPassword],
-            (err, result) => {
-                if (err) {
-                    if (err.code === "ER_DUP_ENTRY") {
-                        return res.status(400).json({
-                            error: "Username already exists"
-                        });
-                    }
-
-                    return res.status(500).json({
-                        error: err.message
-                    });
-                }
-
-                res.status(201).json({
-                    message: "User registered successfully",
-                    id: result.insertId
-                });
-            }
+        const result = await db.query(
+            `INSERT INTO users (username, password)
+             VALUES ($1, $2)
+             RETURNING id`,
+            [username, hashedPassword]
         );
+
+        res.status(201).json({
+            message: "User registered successfully",
+            id: result.rows[0].id
+        });
     } catch (err) {
+        if (err.code === "23505") {
+            return res.status(400).json({
+                error: "Username already exists"
+            });
+        }
+
+        console.error("Registration error:", err.message);
+
         res.status(500).json({
-            error: "Something went wrong"
+            error: "Registration failed"
         });
     }
 };
 
-
-const login = (req, res) => {
+const login = async (req, res) => {
     const { username, password } = req.body;
 
     if (!username || !password) {
@@ -58,22 +50,19 @@ const login = (req, res) => {
         });
     }
 
-    const sql = "SELECT * FROM users WHERE username = ?";
+    try {
+        const result = await db.query(
+            "SELECT * FROM users WHERE username = $1",
+            [username]
+        );
 
-    db.query(sql, [username], async (err, results) => {
-        if (err) {
-            return res.status(500).json({
-                error: err.message
-            });
-        }
-
-        if (results.length === 0) {
+        if (result.rows.length === 0) {
             return res.status(401).json({
                 error: "Invalid username or password"
             });
         }
 
-        const user = results[0];
+        const user = result.rows[0];
 
         const passwordMatch = await bcrypt.compare(
             password,
@@ -84,6 +73,10 @@ const login = (req, res) => {
             return res.status(401).json({
                 error: "Invalid username or password"
             });
+        }
+
+        if (!process.env.JWT_SECRET) {
+            throw new Error("JWT_SECRET is not configured");
         }
 
         const token = jwt.sign(
@@ -101,7 +94,13 @@ const login = (req, res) => {
             message: "Login successful",
             token
         });
-    });
+    } catch (err) {
+        console.error("Login error:", err.message);
+
+        res.status(500).json({
+            error: "Login failed"
+        });
+    }
 };
 
 module.exports = {

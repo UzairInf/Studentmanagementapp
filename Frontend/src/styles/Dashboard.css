@@ -1,0 +1,310 @@
+/* =====================================================================
+   Dashboard.css - the .dashboard page
+   Needs base.css.
+   ===================================================================== */
+
+html body #root:has(.dashboard) {
+    background:
+        radial-gradient(ellipse 60% 35% at 50% -5%, rgba(16, 185, 129, 0.2), transparent 70%),
+        radial-gradient(ellipse 40% 25% at 100% 100%, rgba(15, 118, 110, 0.18), transparent 70%),
+        var(--bg);
+}
+
+.dashboard {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 32px 24px 64px;
+    color: var(--text);
+}
+
+/* Header: title centered, logout on the right */
+.dashboard > header {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 28px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border-accent);
+}
+
+.dashboard > header h1 {
+    grid-column: 2;
+    margin: 0;
+    background: linear-gradient(90deg, #ffffff 30%, var(--accent-soft));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    text-align: center;
+}
+
+.dashboard > header button {
+    grid-column: 3;
+    justify-self: end;
+}
+
+/* Section cards */
+.dashboard section {
+    margin-bottom: 20px;
+    padding: 28px;
+    border: 1px solid var(--border-accent);
+    border-radius: 16px;
+    background:
+        linear-gradient(180deg, rgba(16, 185, 129, 0.07), rgba(16, 185, 129, 0) 45%),
+        var(--surface);
+}
+
+.dashboard section h2 {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin: 0 0 20px;
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    text-align: center;
+}
+
+.dashboard section h2::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 12px rgba(16, 185, 129, 0.8);
+}
+
+/* Summary card */
+.student-summary {
+    border-color: rgba(16, 185, 129, 0.4);
+    background:
+        radial-gradient(ellipse 70% 140% at 50% 120%, rgba(16, 185, 129, 0.35), transparent 70%),
+        var(--surface);
+}
+
+.student-summary h2 {
+    margin: 0;
+    font-size: 22px;
+}
+
+/* Inputs and buttons shared across the dashboard */
+.dashboard input {
+    height: 42px;
+    padding: 0 14px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface-2);
+    color: var(--text);
+    font: inherit;
+    font-size: 14px;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.dashboard input::placeholder {
+    color: #5c6561;
+}
+
+.dashboard input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: var(--ring);
+}
+
+.dashboard button {
+    height: 42px;
+    padding: 0 18px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface-2);
+    color: var(--text);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background-color 0.18s ease, border-color 0.18s ease,
+        box-shadow 0.18s ease, filter 0.18s ease;
+}
+
+.dashboard button:hover:not(:disabled) {
+    border-color: rgba(16, 185, 129, 0.5);
+    background: rgba(16, 185, 129, 0.1);
+}
+
+.dashboard button:focus-visible {
+    outline: none;
+    box-shadow: var(--ring);
+}
+
+.dashboard button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Primary actions (Add / Update / Search) = emerald */
+.dashboard button[type="submit"] {
+    border-color: transparent;
+    background: linear-gradient(135deg, #34d399, #10b981);
+    color: #03130d;
+    font-weight: 600;
+}
+
+.dashboard button[type="submit"]:hover:not(:disabled) {
+    border-color: transparent;
+    background: linear-gradient(135deg, #34d399, #10b981);
+    filter: brightness(1.1);
+}
+
+/* Add / edit form, centered */
+.student-form form {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    max-width: 820px;
+    margin: 0 auto;
+}
+
+.student-form form input {
+    flex: 1 1 200px;
+    min-width: 0;
+}
+
+/* Error message */
+.dashboard .error {
+    max-width: 820px;
+    margin: 0 auto 20px;
+    padding: 12px 14px;
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    border-radius: 10px;
+    background: rgba(239, 68, 68, 0.1);
+    color: #fca5a5;
+    font-size: 14px;
+    text-align: center;
+}
+
+/* Search row, centered */
+.student-list > form {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    max-width: 620px;
+    margin: 0 auto 24px;
+}
+
+.student-list > form input {
+    flex: 1 1 260px;
+    min-width: 0;
+}
+
+/* Loading / empty text */
+.student-list > p {
+    margin: 0;
+    padding: 32px 0;
+    color: var(--muted);
+    font-size: 14px;
+    text-align: center;
+}
+
+/* Table */
+.table-container {
+    overflow-x: auto;
+    border: 1px solid var(--border-accent);
+    border-radius: 12px;
+}
+
+.table-container table {
+    width: 100%;
+    min-width: 640px;
+    border-collapse: collapse;
+}
+
+.table-container th {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border-accent);
+    background: rgba(16, 185, 129, 0.08);
+    color: var(--accent-soft);
+    font-size: 12px;
+    font-weight: 600;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.table-container td {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    font-size: 14px;
+    vertical-align: middle;
+}
+
+.table-container tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.table-container tbody tr {
+    transition: background-color 0.18s ease;
+}
+
+.table-container tbody tr:hover {
+    background: rgba(16, 185, 129, 0.06);
+}
+
+.table-container td:first-child {
+    color: var(--muted);
+}
+
+/* Row actions */
+.table-container td:last-child {
+    display: flex;
+    gap: 8px;
+    white-space: nowrap;
+}
+
+.table-container td button {
+    height: 32px;
+    padding: 0 14px;
+    font-size: 13px;
+}
+
+.table-container td button:last-child:hover:not(:disabled) {
+    border-color: rgba(239, 68, 68, 0.5);
+    background: rgba(239, 68, 68, 0.12);
+    color: #fca5a5;
+}
+
+@media (max-width: 640px) {
+    .dashboard {
+        padding: 20px 16px 48px;
+    }
+
+    .dashboard > header {
+        grid-template-columns: 1fr;
+        justify-items: center;
+    }
+
+    .dashboard > header h1 {
+        grid-column: 1;
+        font-size: 20px;
+    }
+
+    .dashboard > header button {
+        grid-column: 1;
+        justify-self: center;
+    }
+
+    .dashboard section {
+        padding: 20px 16px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #root * {
+        transition: none !important;
+    }
+}

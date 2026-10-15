@@ -1,12 +1,14 @@
-
+jsx
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { supabase } from "../supabaseClient";
 
 function Register() {
     const navigate = useNavigate();
 
     const [form, setForm] = useState({
         username: "",
+        email: "",
         password: ""
     });
 
@@ -30,32 +32,36 @@ function Register() {
         setLoading(true);
 
         try {
-            const response = await fetch(
-                "http://localhost:5000/api/auth/register",
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify(form)
+            const { data, error } = await supabase.auth.signUp({
+                email: form.email.trim(),
+                password: form.password,
+                options: {
+                    data: {
+                        username: form.username.trim()
+                    }
                 }
-            );
+            });
+            console.log("SUPABASE SIGNUP DATA:", data);
+            console.log("SUPABASE SIGNUP ERROR:", error);
 
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(
-                    data.error || "Registration failed"
-                );
+            if (error) {
+                throw error;
             }
 
-            setMessage("Account created successfully. Redirecting to login...");
+            console.log("Signup user:", data.user);
+            console.log("Signup session:", data.session);
 
-            setTimeout(() => {
+            if (data.session) {
+                setMessage("Account created successfully!");
+
                 navigate("/login", { replace: true });
-            }, 1000);
+            } else {
+                setMessage(
+                    "Account created! Check your email to confirm your account before logging in."
+                );
+            }
         } catch (err) {
-            setError(err.message);
+            setError(err.message || "Registration failed.");
         } finally {
             setLoading(false);
         }
@@ -77,11 +83,21 @@ function Register() {
                 />
 
                 <input
+                    type="email"
+                    name="email"
+                    placeholder="Enter your email"
+                    value={form.email}
+                    onChange={handleChange}
+                    required
+                />
+
+                <input
                     type="password"
                     name="password"
-                    placeholder="Choose a password"
+                    placeholder="Choose a password (at least 6 characters)"
                     value={form.password}
                     onChange={handleChange}
+                    minLength={6}
                     required
                 />
 

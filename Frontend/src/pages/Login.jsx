@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { supabase } from "../supabaseClient";
 
 function Login() {
     const navigate = useNavigate();
 
     const [form, setForm] = useState({
-        username: "",
+        email: "",
         password: ""
     });
 
@@ -28,34 +29,18 @@ function Login() {
         setLoading(true);
 
         try {
-            const response = await fetch(
-                "http://localhost:5000/api/auth/login",
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify(form)
-                }
-            );
+            const { error } = await supabase.auth.signInWithPassword({
+                email: form.email.trim(),
+                password: form.password
+            });
 
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(
-                    data.error || "Login failed"
-                );
+            if (error) {
+                throw error;
             }
 
-            if (!data.token) {
-                throw new Error("No token received from server");
-            }
-
-            localStorage.setItem("token", data.token);
-            window.dispatchEvent(new Event("auth-login"));
             navigate("/dashboard", { replace: true });
         } catch (err) {
-            setError(err.message);
+            setError(err.message || "Login failed");
         } finally {
             setLoading(false);
         }
@@ -83,19 +68,19 @@ function Login() {
                     <p className="login__brand">Student Management</p>
                     <h1 className="login__title">Log In</h1>
                     <p className="login__subtitle">
-                        Enter your username and password to continue.
+                        Enter your email and password to continue.
                     </p>
 
                     <form className="login__form" onSubmit={handleSubmit}>
                         <div className="login__field">
-                            <label htmlFor="username">Username</label>
+                            <label htmlFor="email">Email</label>
                             <input
-                                id="username"
-                                type="text"
-                                name="username"
-                                placeholder="Username"
-                                autoComplete="username"
-                                value={form.username}
+                                id="email"
+                                type="email"
+                                name="email"
+                                placeholder="Email address"
+                                autoComplete="email"
+                                value={form.email}
                                 onChange={handleChange}
                                 required
                             />

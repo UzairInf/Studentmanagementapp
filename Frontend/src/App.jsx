@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import {
     BrowserRouter,
@@ -7,32 +6,45 @@ import {
     Navigate
 } from "react-router-dom";
 
+import { supabase } from "./supabaseClient";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 
 function AppRoutes() {
-    const [isLoggedIn, setIsLoggedIn] = useState(
-        !!localStorage.getItem("token")
-    );
+    const [session, setSession] = useState(null);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const handleLogin = () => {
-            setIsLoggedIn(true);
-        };
+        let mounted = true;
 
-        const handleLogout = () => {
-            setIsLoggedIn(false);
-        };
+        supabase.auth.getSession().then(({ data, error }) => {
+            if (!mounted) return;
 
-        window.addEventListener("auth-login", handleLogin);
-        window.addEventListener("auth-logout", handleLogout);
+            if (error) {
+                console.error("Session error:", error.message);
+            }
+
+            setSession(data?.session ?? null);
+            setLoading(false);
+        });
+
+        const {
+            data: { subscription }
+        } = supabase.auth.onAuthStateChange((_event, session) => {
+            setSession(session);
+            setLoading(false);
+        });
 
         return () => {
-            window.removeEventListener("auth-login", handleLogin);
-            window.removeEventListener("auth-logout", handleLogout);
+            mounted = false;
+            subscription.unsubscribe();
         };
     }, []);
+
+    if (loading) {
+        return <p>Loading...</p>;
+    }
 
     return (
         <Routes>
@@ -40,7 +52,7 @@ function AppRoutes() {
                 path="/"
                 element={
                     <Navigate
-                        to={isLoggedIn ? "/dashboard" : "/login"}
+                        to={session ? "/dashboard" : "/login"}
                         replace
                     />
                 }
@@ -49,7 +61,7 @@ function AppRoutes() {
             <Route
                 path="/login"
                 element={
-                    isLoggedIn
+                    session
                         ? <Navigate to="/dashboard" replace />
                         : <Login />
                 }
@@ -63,7 +75,7 @@ function AppRoutes() {
             <Route
                 path="/dashboard"
                 element={
-                    isLoggedIn
+                    session
                         ? <Dashboard />
                         : <Navigate to="/login" replace />
                 }

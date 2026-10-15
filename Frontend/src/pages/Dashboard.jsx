@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { apiFetch } from "../api";
+import { supabase } from "../supabaseClient";
 
 function Dashboard() {
     const navigate = useNavigate();
@@ -19,21 +19,33 @@ function Dashboard() {
     const [search, setSearch] = useState("");
     const [loading, setLoading] = useState(false);
 
-    // Load students
+
     const getStudents = async (searchValue = "") => {
         setLoading(true);
         setError("");
 
         try {
-            const data = await apiFetch(
-                `/api/students?search=${encodeURIComponent(searchValue)}`
-            );
+            let query = supabase
+                .from("students")
+                .select("*")
+                .order("id", { ascending: true });
 
-            if (!Array.isArray(data)) {
-                throw new Error("The server did not return a student list");
+            if (searchValue.trim()) {
+                const term = searchValue.trim();
+                query = query.or(
+                    `name.ilike.%${term}%,email.ilike.%${term}%,course.ilike.%${term}%`
+                );
             }
 
-            setStudents(data);
+            const { data, error } = await query;
+            console.log("Students from Supabase:", data);
+            console.log("Supabase query error:", error);
+
+            if (error) {
+                throw error;
+            }
+
+            setStudents(data ?? []);
         } catch (err) {
             setError(err.message);
             console.error("Student loading error:", err);
@@ -46,10 +58,15 @@ function Dashboard() {
         getStudents();
     }, []);
 
-    // Logout
-    const handleLogout = () => {
-        localStorage.removeItem("token");
-        window.dispatchEvent(new Event("auth-logout"));
+
+    const handleLogout = async () => {
+        const { error } = await supabase.auth.signOut();
+
+        if (error) {
+            setError(error.message);
+            return;
+        }
+
         setStudents([]);
         navigate("/login", { replace: true });
     };
@@ -64,7 +81,7 @@ function Dashboard() {
         }));
     };
 
-    // Add or update student
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError("");
@@ -87,23 +104,27 @@ function Dashboard() {
         }
 
         try {
-            const isEditing = editingId !== null;
+            const student = {
+                name: form.name.trim(),
+                age,
+                email: form.email.trim(),
+                course: form.course.trim()
+            };
 
-            await apiFetch(
-                isEditing
-                    ? `/api/students/${editingId}`
-                    : "/api/students",
-                {
-                    method: isEditing ? "PUT" : "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        ...form,
-                        age
-                    })
-                }
-            );
+            if (editingId !== null) {
+                const { error } = await supabase
+                    .from("students")
+                    .update(student)
+                    .eq("id", editingId);
+
+                if (error) throw error;
+            } else {
+                const { error } = await supabase
+                    .from("students")
+                    .insert([student]);
+
+                if (error) throw error;
+            }
 
             setForm({
                 name: "",
@@ -116,8 +137,10 @@ function Dashboard() {
             await getStudents(search);
         } catch (err) {
             setError(err.message);
+            console.error("Saving student error:", err);
         }
     };
+
 
     // Start editing
     const handleEdit = (student) => {
@@ -147,16 +170,19 @@ function Dashboard() {
         setError("");
     };
 
-    // Delete student
+
     const deleteStudent = async (id) => {
         if (!window.confirm("Are you sure you want to delete this student?")) {
             return;
         }
 
         try {
-            await apiFetch(`/api/students/${id}`, {
-                method: "DELETE"
-            });
+            const { error } = await supabase
+                .from("students")
+                .delete()
+                .eq("id", id);
+
+            if (error) throw error;
 
             if (editingId === id) {
                 cancelEdit();
@@ -165,6 +191,7 @@ function Dashboard() {
             await getStudents(search);
         } catch (err) {
             setError(err.message);
+            console.error("Deleting student error:", err);
         }
     };
 

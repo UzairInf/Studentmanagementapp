@@ -300,7 +300,7 @@ function Dashboard() {
                         <table>
                             <thead>
                                 <tr>
-                                    <th>ID</th>
+                                    <th>S.no</th>
                                     <th>Name</th>
                                     <th>Age</th>
                                     <th>Email</th>
@@ -310,9 +310,9 @@ function Dashboard() {
                             </thead>
 
                             <tbody>
-                                {students.map((student) => (
+                                {students.map((student, index) => (
                                     <tr key={student.id}>
-                                        <td>{student.id}</td>
+                                        <td>{index + 1}</td>
                                         <td>{student.name}</td>
                                         <td>{student.age}</td>
                                         <td>{student.email}</td>
